@@ -2,74 +2,87 @@
 
 インターン生と企業をマッチングするスカウトサービスのプロトタイプです。
 
-Rails API と Next.js を分離した構成で開発します。
+バックエンドは Rails API、フロントエンドは Next.js で実装しています。
 
 ## 技術構成
 
 - Backend: Ruby on Rails API
-- Frontend: Next.js
-- Database: 未定（開発初期は SQLite、提出時は PostgreSQL も検討）
+- Frontend: Next.js / TypeScript
+- Database: SQLite
 - API: REST API
 - Repository: Monorepo
 
-## 作る機能
+## 主な機能
 
-### 必須機能
+### 必須要件
 
-- インターン生が登録できる
-- 企業が登録できる
-- 企業がインターン生一覧を閲覧できる
-- 企業がインターン生にメッセージを送信できる
-- インターン生が受信メッセージを確認できる
+- インターン生登録
+- 企業登録
+- ログイン
+- インターン生プロフィール登録・編集
+- 企業によるインターン生一覧・詳細閲覧
+- 企業からインターン生へのスカウトメッセージ送信
+- メッセージ一覧・詳細確認
 
-### 余裕があれば追加する機能
+### 追加機能
 
-- 企業が募集を掲載できる
-- インターン生が募集を閲覧できる
-- プロフィールにスキルタグを設定できる
-- メッセージの既読管理
+- 企業による募集掲載
+- 募集一覧・詳細表示
+- 募集検索・絞り込み
+  - キーワード
+  - 勤務地
+  - 必要スキル
+- 企業によるインターン生お気に入り保存
+- インターン生による募集保存
+- メッセージ既読管理
 
-## ディレクトリ構成予定
+## 画面
+
+```text
+/                       トップページ
+/register               ユーザー登録
+/login                  ログイン
+/dashboard              ダッシュボード
+/profile                インターン生プロフィール編集
+/interns                企業向けインターン生一覧
+/interns/:id            インターン生詳細・スカウト送信
+/favorite-interns       企業向けお気に入りインターン生一覧
+/jobs                   募集一覧・検索
+/jobs/:id               募集詳細
+/company/jobs/new       企業向け募集掲載
+/saved-jobs             インターン生向け保存済み募集
+/messages               メッセージ一覧
+/messages/:id           メッセージ詳細
+```
+
+## ディレクトリ構成
 
 ```text
 intern-scout-service/
+├── backend/     # Rails API
+├── frontend/    # Next.js
 ├── README.md
-├── backend/
-│   ├── app/
-│   ├── config/
-│   ├── db/
-│   └── Gemfile
-├── frontend/
-│   ├── app/
-│   ├── components/
-│   ├── lib/
-│   └── package.json
-└── docs/
-    ├── api.md
-    ├── architecture.md
-    └── db_design.md
+└── .gitignore
 ```
 
-## 初期DB設計案
+## DB設計
 
 ### users
 
-ログインするユーザーを管理します。
-インターン生と企業は `role` で区別します。
+インターン生と企業を `role` で区別します。
 
 ```text
 id
 name
 email
 password_digest
+auth_token_digest
 role
 created_at
 updated_at
 ```
 
 ### intern_profiles
-
-インターン生固有のプロフィールを管理します。
 
 ```text
 id
@@ -85,8 +98,6 @@ updated_at
 
 ### company_profiles
 
-企業固有のプロフィールを管理します。
-
 ```text
 id
 user_id
@@ -98,8 +109,6 @@ updated_at
 ```
 
 ### messages
-
-企業からインターン生へのスカウトメッセージを管理します。
 
 ```text
 id
@@ -113,8 +122,6 @@ updated_at
 
 ### job_posts
 
-余裕がある場合に実装する募集掲載機能です。
-
 ```text
 id
 company_id
@@ -127,161 +134,98 @@ created_at
 updated_at
 ```
 
-## API設計案
+### favorite_interns
+
+企業がお気に入り登録したインターン生を管理します。
 
 ```text
-POST   /api/v1/register
-POST   /api/v1/login
-GET    /api/v1/me
-
-GET    /api/v1/interns
-GET    /api/v1/interns/:id
-PATCH  /api/v1/intern_profile
-
-GET    /api/v1/messages
-POST   /api/v1/messages
-
-GET    /api/v1/job_posts
-POST   /api/v1/job_posts
-PATCH  /api/v1/job_posts/:id
+id
+company_id
+intern_id
+created_at
+updated_at
 ```
 
-## APIの使い方
+### saved_job_posts
 
-Rails API は開発環境では `http://localhost:3000` で起動する想定です。
-
-認証が必要なAPIでは、ログインまたは登録時に返る `token` を `Authorization` ヘッダーに指定します。
+インターン生が保存した募集を管理します。
 
 ```text
-Authorization: Bearer <token>
+id
+intern_id
+job_post_id
+created_at
+updated_at
 ```
 
-### ユーザー登録
+## API
 
-```http
+### 認証
+
+```text
 POST /api/v1/register
-Content-Type: application/json
-```
-
-```json
-{
-  "user": {
-    "name": "山田太郎",
-    "email": "taro@example.com",
-    "password": "password123",
-    "password_confirmation": "password123",
-    "role": "intern"
-  }
-}
-```
-
-`role` は `intern` または `company` を指定します。
-
-### ログイン
-
-```http
 POST /api/v1/login
-Content-Type: application/json
+GET  /api/v1/me
 ```
 
-```json
-{
-  "user": {
-    "email": "taro@example.com",
-    "password": "password123"
-  }
-}
-```
+認証が必要なAPIでは、登録・ログイン時に返る token を指定します。
 
-### ログイン中ユーザー取得
-
-```http
-GET /api/v1/me
+```text
 Authorization: Bearer <token>
 ```
 
-### インターン生プロフィール作成・更新
+### インターン生プロフィール
 
-インターン生ユーザーのみ利用できます。
-
-```http
+```text
+GET   /api/v1/intern_profile
 PATCH /api/v1/intern_profile
-Authorization: Bearer <token>
-Content-Type: application/json
 ```
 
-```json
-{
-  "intern_profile": {
-    "school_name": "テスト大学",
-    "graduation_year": 2027,
-    "bio": "Rails と TypeScript を学習しています。",
-    "skills": "Ruby, Rails, TypeScript",
-    "desired_position": "Webエンジニア"
-  }
-}
-```
+### インターン生閲覧
 
-### インターン生一覧・詳細
-
-企業ユーザーのみ利用できます。
-
-```http
+```text
 GET /api/v1/interns
-Authorization: Bearer <token>
-```
-
-```http
 GET /api/v1/interns/:id
-Authorization: Bearer <token>
 ```
 
-### メッセージ送信
+### メッセージ
 
-企業ユーザーのみ利用できます。
-
-```http
+```text
+GET  /api/v1/messages
+GET  /api/v1/messages/:id
 POST /api/v1/messages
-Authorization: Bearer <token>
-Content-Type: application/json
 ```
 
-```json
-{
-  "message": {
-    "receiver_id": 1,
-    "body": "弊社のインターンに興味はありませんか？"
-  }
-}
+### 募集
+
+```text
+GET   /api/v1/job_posts
+GET   /api/v1/job_posts/:id
+POST  /api/v1/job_posts
+PATCH /api/v1/job_posts/:id
 ```
 
-### メッセージ一覧・詳細
+募集一覧は以下のクエリで絞り込みできます。
 
-ログインユーザーが送受信したメッセージのみ取得できます。
-
-```http
-GET /api/v1/messages
-Authorization: Bearer <token>
+```text
+GET /api/v1/job_posts?keyword=rails&location=tokyo&skill=ruby
 ```
 
-```http
-GET /api/v1/messages/:id
-Authorization: Bearer <token>
+### お気に入り
+
+```text
+GET    /api/v1/favorite_interns
+POST   /api/v1/favorite_interns
+DELETE /api/v1/favorite_interns/:id
 ```
 
-受信者が詳細APIを開くと `read_at` がセットされます。
+### 保存済み募集
 
-## 実装順
-
-1. Rails API プロジェクトを `backend/` に作成する
-2. Next.js プロジェクトを `frontend/` に作成する
-3. User / InternProfile / CompanyProfile / Message のモデルを作成する
-4. 登録・ログインAPIを作成する
-5. インターン生一覧APIを作成する
-6. メッセージ送信APIを作成する
-7. フロントエンドで登録・ログイン画面を作成する
-8. インターン生一覧・詳細画面を作成する
-9. メッセージ送信・一覧画面を作成する
+```text
+GET    /api/v1/saved_job_posts
+POST   /api/v1/saved_job_posts
+DELETE /api/v1/saved_job_posts/:id
+```
 
 ## 起動方法
 
@@ -289,7 +233,7 @@ Authorization: Bearer <token>
 
 ```powershell
 cd backend
-rails server
+rails server -p 3000
 ```
 
 ### Frontend
@@ -301,6 +245,47 @@ cd frontend
 npm run dev -- -p 3001
 ```
 
-フロントエンドは `http://localhost:3001` で確認します。
+ブラウザで以下を開きます。
 
-APIの接続先を変える場合は、frontend 側で `NEXT_PUBLIC_API_BASE_URL` を設定します。
+```text
+http://localhost:3001
+```
+
+## 動作確認の流れ
+
+1. `/register` でインターン生として登録する
+2. `/profile` でプロフィールを登録する
+3. ログアウトする
+4. `/register` で企業として登録する
+5. `/interns` でインターン生一覧を確認する
+6. `/interns/:id` からスカウトメッセージを送信する
+7. `/company/jobs/new` から募集を掲載する
+8. `/jobs` で募集検索・絞り込みを確認する
+9. インターン生でログインし直し、`/messages` でメッセージを確認する
+10. `/jobs` で募集を保存し、`/saved-jobs` で確認する
+
+## テスト・検証
+
+### Backend
+
+```powershell
+cd backend
+rails test
+```
+
+### Frontend
+
+```powershell
+cd frontend
+npm run lint
+npm run build
+```
+
+## 実装メモ
+
+- Rails API と Next.js を分離し、REST API で連携しています。
+- ユーザーは `users.role` で `intern` と `company` を管理しています。
+- 認証はプロトタイプ向けに Bearer token を利用しています。
+- 企業だけがインターン生へスカウトメッセージを送信できます。
+- 企業だけが募集を掲載できます。
+- インターン生は募集を保存でき、企業はインターン生をお気に入り保存できます。
