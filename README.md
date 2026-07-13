@@ -96,18 +96,6 @@ created_at
 updated_at
 ```
 
-### company_profiles
-
-```text
-id
-user_id
-company_name
-description
-website_url
-created_at
-updated_at
-```
-
 ### messages
 
 ```text
@@ -183,6 +171,8 @@ PATCH /api/v1/intern_profile
 
 ### インターン生閲覧
 
+企業ユーザーのみ利用できます。
+
 ```text
 GET /api/v1/interns
 GET /api/v1/interns/:id
@@ -197,6 +187,9 @@ POST /api/v1/messages
 ```
 
 ### 募集
+
+一覧・詳細はログインユーザーが利用できます。
+作成・更新は企業ユーザーのみ利用できます。
 
 ```text
 GET   /api/v1/job_posts
@@ -213,6 +206,8 @@ GET /api/v1/job_posts?keyword=rails&location=tokyo&skill=ruby
 
 ### お気に入り
 
+企業ユーザーがインターン生を保存できます。
+
 ```text
 GET    /api/v1/favorite_interns
 POST   /api/v1/favorite_interns
@@ -220,6 +215,8 @@ DELETE /api/v1/favorite_interns/:id
 ```
 
 ### 保存済み募集
+
+インターン生ユーザーが募集を保存できます。
 
 ```text
 GET    /api/v1/saved_job_posts
